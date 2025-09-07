@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
-import { Bellota_Text, Bevan } from "next/font/google";
+import { Roboto, Roboto_Slab } from "next/font/google";
 import "./globals.css";
 
-const bellotaText = Bellota_Text({
-  variable: "--font-bellota-text",
+const roboto = Roboto({
+  variable: "--font-roboto",
   subsets: ["latin"],
-  weight: ["300", "400", "700"],
+  weight: ["200", "300", "400", "700"],
 });
 
-const bevan = Bevan({
-  variable: "--font-bevan",
+const robotoSlab = Roboto_Slab({
+  variable: "--font-roboto-slab",
   subsets: ["latin"],
-  weight: ["400"],
+  weight: ["400", "700"],
 });
 
 export const metadata: Metadata = {
@@ -25,9 +25,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${bellotaText.variable} ${bevan.variable}`}>
+    <html lang="en" className={`${roboto.variable} ${robotoSlab.variable}`}>
       <body
-        className={`${bellotaText.className} antialiased`}
+        className={`${roboto.className} antialiased`}
       >
         {children}
       </body>
