@@ -287,14 +287,33 @@ export default function Home() {
 
       {/* Hero Section */}
       <div className="fixed top-10 left-0 w-full h-[100vh] flex flex-col justify-evenly items-start pt-5 z-10">
-        <h1 className="text-[4.5vw] leading-[0.8] tracking-wider font-regular pl-2">Websites, Applications, and much more</h1>
+        <motion.h1 
+          className="text-[4.5vw] leading-[0.8] tracking-wider font-regular pl-2"
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+        >
+          Websites, Applications, and much more
+        </motion.h1>
         <div className="flex flex-nowrap justify-center items-start">
-         <h1 className="font-roboto-slab font-black text-[#2DC5FF] -tracking-[0.1vw] text-[17vw] leading-[0.95] w-auto pl-0">Designed <span className="-tracking-[0.30vw]">Delivered</span></h1>
-        <div className="relative flex flex-nowrap">
-         <h1 className="absolute top-0 right-6 -translate-y-1/4 font-roboto-slab font-black text-[#2DC5FF] text-[40vw]">&</h1>
-          
-        </div>
-
+          <motion.h1 
+            className="font-roboto-slab font-black text-[#2DC5FF] -tracking-[0.1vw] text-[17vw] leading-[0.95] w-auto pl-0"
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.5 }}
+          >
+            Designed <span className="-tracking-[0.30vw]">Delivered</span>
+          </motion.h1>
+          <div className="relative flex flex-nowrap">
+            <motion.h1 
+              className="absolute top-0 right-6 -translate-y-1/4 font-roboto-slab font-black text-[#2DC5FF] text-[40vw]"
+              initial={{ opacity: 0, y: 150, scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 1.2, delay: 0.8 }}
+            >
+              &
+            </motion.h1>
+          </div>
         </div>
       </div>
 
