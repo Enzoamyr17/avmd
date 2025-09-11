@@ -3,10 +3,26 @@
 import Image from "next/image";
 import { Phone } from "lucide-react";
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [currentTestimonialSlide, setCurrentTestimonialSlide] = useState(0);
+  const [currentSection, setCurrentSection] = useState(0);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const [snapMode, setSnapMode] = useState(false);
+  const [lastScrollTime, setLastScrollTime] = useState(0);
+  
+  // Define sections for scroll snapping
+  const sections = [
+    'hero',
+    'build-scale',
+    'four-steps', 
+    'our-works',
+    'testimonials',
+    'our-team',
+    'contact-us'
+  ];
   
   const portfolioItems = [
     { 
@@ -124,6 +140,91 @@ export default function Home() {
     setCurrentTestimonialSlide(index);
   };
 
+  // Scroll snapping functions
+  const scrollToSection = (sectionIndex: number) => {
+    if (sectionIndex < 0 || sectionIndex >= sections.length) return;
+    
+    const sectionId = sections[sectionIndex];
+    const element = document.getElementById(sectionId);
+    
+    if (element) {
+      setIsScrolling(true);
+      element.scrollIntoView({ behavior: 'smooth' });
+      setCurrentSection(sectionIndex);
+      
+      // Reset scrolling flag after animation
+      setTimeout(() => {
+        setIsScrolling(false);
+      }, 800);
+    }
+  };
+
+  // Update current section based on scroll position
+  const updateCurrentSection = () => {
+    if (isScrolling) return;
+    
+    const scrollPosition = window.scrollY + window.innerHeight / 2;
+    
+    for (let i = sections.length - 1; i >= 0; i--) {
+      const element = document.getElementById(sections[i]);
+      if (element && element.offsetTop <= scrollPosition) {
+        if (i !== currentSection) {
+          setCurrentSection(i);
+        }
+        break;
+      }
+    }
+  };
+
+  const handleWheel = (e: WheelEvent) => {
+    const currentTime = Date.now();
+    const timeSinceLastScroll = currentTime - lastScrollTime;
+    
+    // If currently animating, prevent all scrolling
+    if (isScrolling) {
+      e.preventDefault();
+      return;
+    }
+    
+    // Check if user is doing rapid scrolling (likely trying to scroll within content)
+    const isRapidScrolling = timeSinceLastScroll < 150;
+    
+    // Check scroll magnitude - large scrolls indicate intentional section jumping
+    const isLargeScroll = Math.abs(e.deltaY) > 50;
+    
+    // Activate snap mode if user does a large scroll or if already in snap mode
+    if (isLargeScroll && !isRapidScrolling) {
+      setSnapMode(true);
+    }
+    
+    // If in snap mode and not rapid scrolling, do section snapping
+    if (snapMode && !isRapidScrolling && isLargeScroll) {
+      e.preventDefault();
+      
+      if (e.deltaY > 0) {
+        // Scroll down
+        if (currentSection < sections.length - 1) {
+          scrollToSection(currentSection + 1);
+        }
+      } else {
+        // Scroll up
+        if (currentSection > 0) {
+          scrollToSection(currentSection - 1);
+        }
+      }
+    }
+    // Otherwise allow normal scrolling
+    
+    setLastScrollTime(currentTime);
+    
+    // Reset snap mode after period of inactivity
+    setTimeout(() => {
+      if (Date.now() - currentTime > 2000) {
+        setSnapMode(false);
+      }
+    }, 2000);
+  };
+
   useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://assets.calendly.com/assets/external/widget.js";
@@ -142,6 +243,28 @@ export default function Home() {
       if (existingLink) existingLink.remove();
     };
   }, []);
+
+  // Add scroll snapping event listener
+  useEffect(() => {
+    window.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      window.removeEventListener('wheel', handleWheel);
+    };
+  }, [currentSection, isScrolling, snapMode, lastScrollTime]);
+
+  // Add scroll listener to track current section during normal scrolling
+  useEffect(() => {
+    const handleScroll = () => {
+      updateCurrentSection();
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [currentSection, isScrolling]);
 
   return (
     <div className="flex flex-col items-center justify-start min-h-screen h-auto w-full overflow-x-hidden">
@@ -163,7 +286,7 @@ export default function Home() {
       </div>
 
       {/* Hero Section */}
-      <div className="fixed top-10 left-0 w-full h-auto flex flex-col justify-evenly items-start pt-5 z-10">
+      <div className="fixed top-10 left-0 w-full h-[100vh] flex flex-col justify-evenly items-start pt-5 z-10">
         <h1 className="text-[4.5vw] leading-[0.8] tracking-wider font-regular pl-2">Websites, Applications, and much more</h1>
         <div className="flex flex-nowrap justify-center items-start">
          <h1 className="font-roboto-slab font-black text-[#2DC5FF] -tracking-[0.1vw] text-[17vw] leading-[0.95] w-auto pl-0">Designed <span className="-tracking-[0.30vw]">Delivered</span></h1>
@@ -176,16 +299,28 @@ export default function Home() {
       </div>
 
       {/* Space for Hero Section */}
-      <div className="w-full h-[75.2vh] z-0 spacer"></div>
+      <div id="hero" className="w-full h-[100vh] z-0 spacer snap-start"></div>
 
       {/* Build. Scale. Dominate. Section */}
-      <div className="flex justify-between items-center leading-[1.2] gap-2 p-14 w-full h-[calc(100vh+20px)] bg-[#346D53] z-20">
-        <div className="flex justify-center items-center w-2/3 h-full">
+      <div id="build-scale" className="flex justify-between items-center leading-[1.2] gap-2 p-14 w-full h-[100vh] bg-[#346D53] z-20 snap-start">
+        <motion.div 
+          className="flex justify-center items-center w-2/3 h-full"
+          initial={{ opacity: 0, x: -50 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+        >
           <div className="w-3/4 h-3/4 border border-white/30 rounded-lg bg-white/20">
 
           </div>
-        </div>
-        <div className="flex flex-col justify-center gap-6 items-start px-2 w-1/3 h-full">
+        </motion.div>
+        <motion.div 
+          className="flex flex-col justify-center gap-6 items-start px-2 w-1/3 h-full"
+          initial={{ opacity: 0, x: 50 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+        >
           <h1 className="text-6xl tracking-tight font-bold">Build. Scale. Dominate.</h1>
           <h2 className="text-4xl font-thin">—The digital advantage.</h2>
           <p className="text-2xl font-light tracking-wide pl-2 pr-18">From simple websites to complex systems, we create digital solutions that drive results.</p>
@@ -193,32 +328,80 @@ export default function Home() {
           <div className="flex justify-end items-center w-3/4 gap-2">
             <button onClick={() => document.getElementById("contact-us")?.scrollIntoView({ behavior: "smooth" })} className="bg-[#2DC5FF]  px-4 py-2 rounded-full font-bold text-md tracking-wide">Send a Proposal</button>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* 4 steps Section */}
-      <div className="flex flex-row-reverse justify-between items-center leading-[1.2] gap-2 p-14 w-full h-[calc(100vh+20px)] bg-[#FFB742] z-20">
-        <div className="flex justify-center items-center w-2/3 h-full">
+      <div id="four-steps" className="flex flex-row-reverse justify-between items-center leading-[1.2] gap-2 p-14 w-full h-[100vh] bg-[#FFB742] z-20 snap-start">
+        <motion.div 
+          className="flex justify-center items-center w-2/3 h-full"
+          initial={{ opacity: 0, x: 50 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+        >
           <div className="grid grid-cols-2 grid-rows-2 gap-2 w-3/4 h-3/4">
-            <div className="rounded-lg bg-white/30 border w-full h-full"></div>
-            <div className="rounded-lg bg-white/30 border w-full h-full"></div>
-            <div className="rounded-lg bg-white/30 border w-full h-full"></div>
-            <div className="rounded-lg bg-white/30 border w-full h-full"></div>
+            <motion.div 
+              className="rounded-lg bg-white/30 border w-full h-full"
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+            ></motion.div>
+            <motion.div 
+              className="rounded-lg bg-white/30 border w-full h-full"
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+            ></motion.div>
+            <motion.div 
+              className="rounded-lg bg-white/30 border w-full h-full"
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+            ></motion.div>
+            <motion.div 
+              className="rounded-lg bg-white/30 border w-full h-full"
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.7 }}
+            ></motion.div>
           </div>
-        </div>
-        <div className="flex flex-col justify-center gap-6 items-end text-right px-2 w-1/3 h-full">
+        </motion.div>
+        <motion.div 
+          className="flex flex-col justify-center gap-6 items-end text-right px-2 w-1/3 h-full"
+          initial={{ opacity: 0, x: -50 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+        >
           <h1 className="text-6xl tracking-wide font-bold">4 Steps.</h1>
           <p className="">Transform your business with our 4-step process that just works.</p>
-        </div>
+        </motion.div>
       </div>
 
       {/* Our Works Section */}
-      <div className="flex flex-col justify-evenly items-center leading-[1.2] gap-8 p-14 w-full h-[calc(100vh+20px)] bg-gradient-to-br from-orange-400 to-orange-600 z-20">
-        <div className="flex flex-col justify-center gap-6 text-center px-2 py-4 w-full">
+      <div id="our-works" className="flex flex-col justify-evenly items-center leading-[1.2] gap-8 p-14 w-full h-[100vh] bg-gradient-to-br from-orange-400 to-orange-600 z-20 snap-start">
+        <motion.div 
+          className="flex flex-col justify-center gap-6 text-center px-2 py-4 w-full"
+          initial={{ opacity: 0, y: -30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+        >
           <h1 className="text-6xl tracking-wide font-bold">Our Works.</h1>
-        </div>
+        </motion.div>
 
-        <div className="grid grid-cols-2 justify-center gap-6 items-center px-2 w-full h-auto">
+        <motion.div 
+          className="grid grid-cols-2 justify-center gap-6 items-center px-2 w-full h-auto"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+        >
 
           <div>
               {/* Carousel Container */}
@@ -296,17 +479,29 @@ export default function Home() {
             </button>
           </div>
 
-        </div>
+        </motion.div>
         
       </div>
 
       {/* Testimonials Section */}
-      <div className="flex flex-col justify-evenly items-center leading-[1.2] gap-8 p-14 w-full h-[calc(100vh+20px)] bg-gradient-to-br from-purple-400 to-purple-600 z-20">
-        <div className="flex flex-col justify-center gap-6 text-center px-2 py-4 w-full">
+      <div id="testimonials" className="flex flex-col justify-evenly items-center leading-[1.2] gap-8 p-14 w-full h-[100vh] bg-gradient-to-br from-purple-400 to-purple-600 z-20 snap-start">
+        <motion.div 
+          className="flex flex-col justify-center gap-6 text-center px-2 py-4 w-full"
+          initial={{ opacity: 0, y: -30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+        >
           <h1 className="text-6xl tracking-wide font-bold text-white">Testimonials</h1>
-        </div>
+        </motion.div>
 
-        <div className="flex justify-center items-center px-2 w-full h-auto">
+        <motion.div 
+          className="flex justify-center items-center px-2 w-full h-auto"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+        >
           <div className="relative w-full max-w-4xl h-96">
             {/* Carousel Items */}
             <div className="relative w-full h-full overflow-hidden rounded-xl">
@@ -369,20 +564,39 @@ export default function Home() {
               </button>
             </div>
           </div>
-        </div>
+        </motion.div>
         
       </div>
 
       {/* Our Team Section */}
-      <div className="flex flex-col justify-evenly items-center leading-[1.2] gap-8 p-14 w-full h-auto min-h-[100vh] bg-gradient-to-br from-green-400 to-green-600 z-20">
-        <div className="flex flex-col justify-center gap-6 text-center px-2 py-4 w-full">
+      <div id="our-team" className="flex flex-col justify-evenly items-center leading-[1.2] gap-8 p-14 w-full h-[100vh] bg-gradient-to-br from-green-400 to-green-600 z-20 snap-start">
+        <motion.div 
+          className="flex flex-col justify-center gap-6 text-center px-2 py-4 w-full"
+          initial={{ opacity: 0, y: -30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+        >
           <h1 className="text-6xl tracking-wide font-bold text-white">Our Team</h1>
           <p className="text-xl text-white/90 max-w-3xl mx-auto">Meet the talented individuals behind AVM Digital who bring your vision to life</p>
-        </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full max-w-7xl px-4">
-          {teamMembers.map((member) => (
-            <div key={member.id} className="flex flex-col items-center text-center bg-white/20 backdrop-blur-sm border border-white/20 rounded-xl p-6 hover:bg-white/25 transition-all duration-300 group">
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full max-w-7xl px-4"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+        >
+          {teamMembers.map((member, index) => (
+            <motion.div 
+              key={member.id} 
+              className="flex flex-col items-center text-center bg-white/20 backdrop-blur-sm border border-white/20 rounded-xl p-6 hover:bg-white/25 transition-all duration-300 group"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.6 + index * 0.1 }}
+            >
               <div className="w-32 h-32 bg-white/30 rounded-full mb-6 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
                 <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center">
                   <span className="text-3xl font-bold text-white">{member.name.split(' ').map(n => n[0]).join('')}</span>
@@ -392,31 +606,58 @@ export default function Home() {
               <h4 className="text-lg font-semibold text-white/90 mb-1">{member.role}</h4>
               <p className="text-sm text-white/80 font-medium mb-4">{member.specialization}</p>
               <p className="text-sm text-white/75 leading-relaxed">{member.description}</p>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
-        <div className="text-center text-white/90 max-w-2xl">
+        <motion.div 
+          className="text-center text-white/90 max-w-2xl"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.8 }}
+        >
           <p className="text-lg">Ready to work with our team? <button onClick={() => document.getElementById("contact-us")?.scrollIntoView({ behavior: "smooth" })} className="underline hover:text-white transition-colors cursor-pointer">Get in touch</button> and let&apos;s create something amazing together.</p>
-        </div>
+        </motion.div>
       </div>
       
       {/* Contact Us Section */}
-      <div id="contact-us" className="flex flex-col justify-evenly items-center leading-[1.2] gap-8 p-14 w-full h-auto min-h-[100vh] bg-[#2DC5FF] z-20">
-        <div className="flex flex-col justify-center gap-6 text-center px-2 py-4 w-full">
+      <div 
+        id="contact-us" 
+        className="flex flex-col justify-evenly items-center leading-[1.2] gap-8 p-14 w-full h-[100vh] bg-[#2DC5FF] z-20 snap-start"
+      >
+        <motion.div 
+          className="flex flex-col justify-center gap-6 text-center px-2 py-4 w-full"
+          initial={{ opacity: 0, y: -30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+        >
           <h1 className="text-6xl tracking-wide font-bold text-white">Let&apos;s Work Together</h1>
           <p className="text-xl text-white/90 max-w-2xl mx-auto">Ready to transform your business? Schedule a consultation with our team to discuss your project and get started.</p>
-        </div>
-        <div className="flex justify-center items-center w-full max-w-4xl h-auto bg-white rounded-2xl shadow-2xl overflow-hidden">
+        </motion.div>
+        <motion.div 
+          className="flex justify-center items-center w-full max-w-4xl h-auto bg-white rounded-2xl shadow-2xl overflow-hidden"
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+        >
           <div 
             className="calendly-inline-widget w-full h-[700px]" 
             data-url="https://calendly.com/gregoriorenzo05"
             style={{ minWidth: '320px' }}
           ></div>
-        </div>
-        <div className="text-center text-white/80 max-w-2xl">
+        </motion.div>
+        <motion.div 
+          className="text-center text-white/80 max-w-2xl"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.6 }}
+        >
           <p className="text-sm">Don&apos;t have time right now? <a href="mailto:sample.email@avmdigital.com" className="underline hover:text-white transition-colors">Send us an email</a> and we&apos;ll get back to you within 24 hours.</p>
-        </div>
+        </motion.div>
       </div>
 
     </div>
